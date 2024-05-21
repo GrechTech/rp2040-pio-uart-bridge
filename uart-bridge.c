@@ -23,18 +23,8 @@ PIO pio;
 uint sm_rx;
 uint sm_tx;
 
-#ifdef UART_FLOW_CONTROL
-// This function gets called when a CDC control signal is received
-void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
-{
-    // Set the RTS and DTR pins based on the state received from the computer
-    gpio_put(UART_RTS_PIN, rts);
-    gpio_put(UART_DTR_PIN, dtr);
-}
-#endif
-
 // UART PIO RX to USB CDC
-void cdc_task_read(void) 
+inline void cdc_task_read(void) 
 {
     if (!pio_sm_is_rx_fifo_empty(pio, sm_rx)) 
     {
@@ -53,7 +43,7 @@ void cdc_task_read(void)
 }
 
 // USB CDC to UART PIO TX
-void cdc_task_write(void) 
+inline void cdc_task_write(void) 
 {
     if (tud_cdc_available()) 
     {
@@ -99,7 +89,22 @@ int main()
     gpio_set_dir(UART_RTS_PIN, GPIO_OUT);
     gpio_init(UART_DTR_PIN);
     gpio_set_dir(UART_DTR_PIN, GPIO_OUT);
+    
+    // GT2040 programming mode sequence
+    sleep_ms(2);
+
+    gpio_put(UART_DTR_PIN, false); //io0 high
+    gpio_put(UART_RTS_PIN, true); // chip in reset
+
+    gpio_put(UART_DTR_PIN, true); //chip out of reset
+    gpio_put(UART_RTS_PIN, false); //io low
+
+    sleep_ms(2);
+
+    gpio_put(UART_DTR_PIN, false); //chip out of reset
+    gpio_put(UART_RTS_PIN, true); // chip in reset
     #endif
+
 
     // Launch loops
     multicore_launch_core1(core1_entry);
