@@ -3,18 +3,21 @@
  * Copyright (c) 2024 Thomas Grech <thomas@grechtech.co.uk>
  */
 
-#include "pico/stdlib.h"
-#include "hardware/pio.h"
-#include "tusb.h"
-#include "uart_rx.pio.h"
-#include "uart_tx.pio.h"
-
+// Config
 #define UART_TX_PIN 21
 #define UART_RX_PIN 22
 #define UART_RTS_PIN 23 // Flow control
 #define UART_DTR_PIN 24 // Flow control
 #define UART_BAUD_RATE 115200
 #define UART_FLOW_CONTROL
+// End Config
+
+#include "pico/stdlib.h"
+#include "pico/multicore.h"
+#include "hardware/pio.h"
+#include "tusb.h"
+#include "uart_rx.pio.h"
+#include "uart_tx.pio.h"
 
 PIO pio;
 uint sm_rx;

@@ -13,7 +13,9 @@
 #define CFG_TUSB_RHPORT0_MODE OPT_MODE_DEVICE
 
 #define CFG_TUD_CDC 1
-#define CFG_TUD_CDC_RX_BUFSIZE 2048 
-#define CFG_TUD_CDC_TX_BUFSIZE 2048
+
+// Each buffer is used twice, 16K per buffer = 64K total
+#define CFG_TUD_CDC_RX_BUFSIZE 16384 
+#define CFG_TUD_CDC_TX_BUFSIZE 16384
 
 #endif /* _TUSB_CONFIG_H_ */
