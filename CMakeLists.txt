@@ -6,12 +6,6 @@ include(pico-sdk/pico_sdk_init.cmake)
 
 project(pico_uart_bridge)
 
-# Add an option for enabling flow control
-option(FLOW_CONTROL "Enable flow control" OFF)
-if(FLOW_CONTROL)
-    add_definitions(-DFLOW_CONTROL)
-endif()
-
 pico_sdk_init()
   
 add_executable(uart_bridge uart-bridge.c usb-descriptors.c)

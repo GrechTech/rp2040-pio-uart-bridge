@@ -11,11 +11,24 @@
 
 #define UART_TX_PIN 21
 #define UART_RX_PIN 22
+#define UART_RTS_PIN 23 // Flow control
+#define UART_DTR_PIN 24 // Flow control
 #define UART_BAUD_RATE 115200
+#define UART_FLOW_CONTROL
 
 PIO pio;
 uint sm_rx;
 uint sm_tx;
+
+#ifdef UART_FLOW_CONTROL
+// This function gets called when a CDC control signal is received
+void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
+{
+    // Set the RTS and DTR pins based on the state received from the computer
+    gpio_put(UART_RTS_PIN, rts);
+    gpio_put(UART_DTR_PIN, dtr);
+}
+#endif
 
 // UART PIO RX to USB CDC
 void cdc_task_read(void) 
@@ -77,6 +90,13 @@ int main()
 
     uart_rx_program_init(pio, sm_rx, offset_rx, UART_RX_PIN, UART_BAUD_RATE);
     uart_tx_program_init(pio, sm_tx, offset_tx, UART_TX_PIN, UART_BAUD_RATE);
+
+    #ifdef UART_FLOW_CONTROL
+    gpio_init(UART_RTS_PIN);
+    gpio_set_dir(UART_RTS_PIN, GPIO_OUT);
+    gpio_init(UART_DTR_PIN);
+    gpio_set_dir(UART_DTR_PIN, GPIO_OUT);
+    #endif
 
     // Launch loops
     multicore_launch_core1(core1_entry);
