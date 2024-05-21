@@ -4,7 +4,6 @@
  */
 
 #include "pico/stdlib.h"
-#include "pico/time.h"
 #include "hardware/pio.h"
 #include "tusb.h"
 #include "uart_rx.pio.h"
@@ -18,7 +17,7 @@ PIO pio;
 uint sm_rx;
 uint sm_tx;
 
-// 
+// UART PIO RX to USB CDC
 void cdc_task_read(void) 
 {
     if (!pio_sm_is_rx_fifo_empty(pio, sm_rx)) 
@@ -37,6 +36,7 @@ void cdc_task_read(void)
     }
 }
 
+// USB CDC to UART PIO TX
 void cdc_task_write(void) 
 {
     if (tud_cdc_available()) 
@@ -67,6 +67,7 @@ int main()
     stdio_init_all();
     tusb_init();
 
+    // Init UART PIO
     pio = pio0;
     uint offset_rx = pio_add_program(pio, &uart_rx_program);
     uint offset_tx = pio_add_program(pio, &uart_tx_program);
@@ -77,6 +78,7 @@ int main()
     uart_rx_program_init(pio, sm_rx, offset_rx, UART_RX_PIN, UART_BAUD_RATE);
     uart_tx_program_init(pio, sm_tx, offset_tx, UART_TX_PIN, UART_BAUD_RATE);
 
+    // Launch loops
     multicore_launch_core1(core1_entry);
 
     while (1) 

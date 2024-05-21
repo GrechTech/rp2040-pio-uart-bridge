@@ -10,7 +10,7 @@ main () {
 
 	BUILD_DIR=build
 	mkdir -p $BUILD_DIR
-	cmake -B $BUILD_DIR -DFLOW_CONTROL=OFF
+	cmake -B $BUILD_DIR
 	make -C $BUILD_DIR
 }
 
