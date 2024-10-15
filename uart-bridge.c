@@ -8,7 +8,7 @@
 #define UART_RX_PIN 13
 #define UART_RTS_PIN 6 // Flow control
 #define UART_DTR_PIN 7 // Flow control
-#define UART_BAUD_RATE 460800
+#define UART_BAUD_RATE 115200
 #define UART_FLOW_CONTROL
 // #define FORCE_PIO_UART
 // End Config
@@ -24,6 +24,7 @@
 uart_inst_t *uart = uart0; // Pin pairs are for UART0
 #elif !defined(FORCE_PIO_UART) && (((UART_TX_PIN == 4 && UART_RX_PIN == 5) || (UART_TX_PIN == 8 && UART_RX_PIN == 9) || (UART_TX_PIN == 20 && UART_RX_PIN == 21)))
 #define USE_HARDWARE_UART
+#include "hardware/uart.h"
 uart_inst_t *uart = uart1; // Pin pairs are for UART1
 #else
 #include "hardware/pio.h"
