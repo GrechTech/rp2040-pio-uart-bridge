@@ -64,8 +64,8 @@ static const uint8_t usbd_desc_cfg[USBD_DESC_LEN] = {
 };
 
 static char *const usbd_desc_str[] = {
-	[USBD_STR_MANUF] = "Raspberry Pi",
-	[USBD_STR_PRODUCT] = "Pico",
+	[USBD_STR_MANUF] = "GrechTech",
+	[USBD_STR_PRODUCT] = "GT2040",
 	[USBD_STR_SERIAL] = "000000000000",
 	[USBD_STR_CDC] = "Board CDC",
 };
