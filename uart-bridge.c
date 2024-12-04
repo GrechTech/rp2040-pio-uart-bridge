@@ -18,9 +18,11 @@
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "tusb.h"
+#include <string.h>
 
 // Define the reboot to BOOTSEL command sequence
 #define UNIQUE_CMD_SEQUENCE "BOOTSEL_REBOOT_COMMAND_SEQUENCE0"
+#define UNIQUE_CMD_LENGTH 32
 
 // Check if UART pins match any of the valid hardware UART pin configurations and FORCE_PIO_UART is not defined
 #if !defined(FORCE_PIO_UART) && (((UART_TX_PIN == 0 && UART_RX_PIN == 1) || (UART_TX_PIN == 12 && UART_RX_PIN == 13) || (UART_TX_PIN == 16 && UART_RX_PIN == 17)))
@@ -45,6 +47,21 @@ uint sm_tx;
 #warning "UART_BAUD_RATE limited to 115200 due to PIO UART usage"
 #endif
 #endif
+
+// Circular buffer to store the last 32 characters
+static char command_buffer[UNIQUE_CMD_LENGTH] = {0};
+static uint8_t command_index = 0;
+
+// Function to check if the command buffer contains the unique command sequence
+bool check_command_sequence() {
+    for (uint8_t i = 0; i < UNIQUE_CMD_LENGTH; i++) {
+        if (strncmp(&command_buffer[i], UNIQUE_CMD_SEQUENCE, UNIQUE_CMD_LENGTH - i) == 0 &&
+            strncmp(command_buffer, &UNIQUE_CMD_SEQUENCE[UNIQUE_CMD_LENGTH - i], i) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
 
 // UART PIO RX to USB CDC
 void cdc_task_read(void) 
@@ -85,9 +102,6 @@ void cdc_task_read(void)
 // USB CDC to UART PIO TX
 void cdc_task_write(void) 
 {
-    static char command_buffer[32] = {0};
-    static uint8_t command_index = 0;
-
     if (tud_cdc_available()) 
     {
         static uint8_t buf_tx[CFG_TUD_CDC_RX_BUFSIZE];
@@ -97,11 +111,8 @@ void cdc_task_write(void)
         {
             uart_putc(uart, buf_tx[i]);
             // Add character to command buffer
-            command_buffer[command_index++] = buf_tx[i];
-            if (command_index >= sizeof(command_buffer)) 
-            {
-                command_index = 0;
-            }
+            command_buffer[command_index] = buf_tx[i];
+            command_index = (command_index + 1) % UNIQUE_CMD_LENGTH;
         }
         #else
         for (uint32_t i = 0; i < count; i++) 
@@ -112,16 +123,13 @@ void cdc_task_write(void)
             }
             uart_tx_program_putc(pio, sm_tx, buf_tx[i]);
             // Add character to command buffer
-            command_buffer[command_index++] = buf_tx[i];
-            if (command_index >= sizeof(command_buffer)) 
-            {
-                command_index = 0;
-            }
+            command_buffer[command_index] = buf_tx[i];
+            command_index = (command_index + 1) % UNIQUE_CMD_LENGTH;
         }
         #endif
 
         // Check if the command buffer contains the unique command sequence
-        if (strstr(command_buffer, UNIQUE_CMD_SEQUENCE) != NULL) 
+        if (check_command_sequence()) 
         {
             // Reboot into BOOTSEL mode
             reset_usb_boot(0, 0);
