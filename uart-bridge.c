@@ -13,9 +13,14 @@
 // #define FORCE_PIO_UART
 // End Config
 
+#include "hardware/watchdog.h"
+#include "pico/bootrom.h"
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "tusb.h"
+
+// Define the reboot to BOOTSEL command sequence
+#define UNIQUE_CMD_SEQUENCE "BOOTSEL_REBOOT_COMMAND_SEQUENCE0"
 
 // Check if UART pins match any of the valid hardware UART pin configurations and FORCE_PIO_UART is not defined
 #if !defined(FORCE_PIO_UART) && (((UART_TX_PIN == 0 && UART_RX_PIN == 1) || (UART_TX_PIN == 12 && UART_RX_PIN == 13) || (UART_TX_PIN == 16 && UART_RX_PIN == 17)))
@@ -80,6 +85,9 @@ void cdc_task_read(void)
 // USB CDC to UART PIO TX
 void cdc_task_write(void) 
 {
+    static char command_buffer[32] = {0};
+    static uint8_t command_index = 0;
+
     if (tud_cdc_available()) 
     {
         static uint8_t buf_tx[CFG_TUD_CDC_RX_BUFSIZE];
@@ -88,6 +96,12 @@ void cdc_task_write(void)
         for (uint32_t i = 0; i < count; i++) 
         {
             uart_putc(uart, buf_tx[i]);
+            // Add character to command buffer
+            command_buffer[command_index++] = buf_tx[i];
+            if (command_index >= sizeof(command_buffer)) 
+            {
+                command_index = 0;
+            }
         }
         #else
         for (uint32_t i = 0; i < count; i++) 
@@ -97,8 +111,21 @@ void cdc_task_write(void)
                 // Wait until there is space available in the FIFO
             }
             uart_tx_program_putc(pio, sm_tx, buf_tx[i]);
+            // Add character to command buffer
+            command_buffer[command_index++] = buf_tx[i];
+            if (command_index >= sizeof(command_buffer)) 
+            {
+                command_index = 0;
+            }
         }
         #endif
+
+        // Check if the command buffer contains the unique command sequence
+        if (strstr(command_buffer, UNIQUE_CMD_SEQUENCE) != NULL) 
+        {
+            // Reboot into BOOTSEL mode
+            reset_usb_boot(0, 0);
+        }
     }
 }
 
@@ -141,16 +168,16 @@ int main()
     // GT2040 programming mode sequence
     sleep_ms(2);
 
-    gpio_put(UART_DTR_PIN, false); //io0 high
-    gpio_put(UART_RTS_PIN, true); // chip in reset
+    gpio_put(UART_DTR_PIN, false);
+    gpio_put(UART_RTS_PIN, true); 
 
-    gpio_put(UART_DTR_PIN, true); //chip out of reset
-    gpio_put(UART_RTS_PIN, false); //io low
+    gpio_put(UART_DTR_PIN, true); 
+    gpio_put(UART_RTS_PIN, false);
 
     sleep_ms(2);
 
-    gpio_put(UART_DTR_PIN, false); //chip out of reset
-    gpio_put(UART_RTS_PIN, true); // chip in reset
+    gpio_put(UART_DTR_PIN, false);
+    gpio_put(UART_RTS_PIN, true); 
     #endif
 
     // Launch loops

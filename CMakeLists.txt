@@ -18,10 +18,13 @@ target_include_directories(uart_bridge PUBLIC
 	../pico-sdk/lib/tinyusb/src)
 
 target_link_libraries(uart_bridge
-	pico_multicore
+    tinyusb_device
 	pico_stdlib
+    pico_bootrom
+	pico_multicore
+    hardware_uart
+    hardware_pio
 	hardware_flash
-	tinyusb_device
-    hardware_pio)
+)
 
 pico_add_extra_outputs(uart_bridge)
